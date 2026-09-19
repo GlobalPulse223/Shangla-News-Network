@@ -55,11 +55,11 @@ export default function App() {
     return articles.find((a) => a.id === selectedArticleId) || null;
   }, [articles, selectedArticleId]);
 
-  // Open an article and set the clean URL path: /article/:id
+  // Open an article and set URL: ?article=:id (compatible everywhere without 404)
   const handleOpenArticle = useCallback((id: number) => {
     setSelectedArticleId(id);
     try {
-      const targetPath = `/article/${id}`;
+      const targetPath = `/?article=${id}`;
       window.history.pushState({ articleId: id }, '', targetPath);
     } catch (e) {
       console.error('Error pushing URL state:', e);
@@ -67,7 +67,7 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  // Return to homepage and reset URL path to /
+  // Return to homepage and reset URL
   const handleBackToHome = useCallback(() => {
     setSelectedArticleId(null);
     try {

@@ -25,7 +25,7 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
       ? String(import.meta.env.VITE_SITE_URL).replace(/\/$/, '')
       : '';
     const baseOrigin = customOrigin || window.location.origin;
-    return `${baseOrigin}/article/${article.id}`;
+    return `${baseOrigin}/?article=${article.id}`;
   };
 
   const handleCopyLink = () => {
