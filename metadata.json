@@ -1,0 +1,6 @@
+{
+  "name": "Shangla News Network - SNN",
+  "description": "The premier news source for Shangla, KPK, delivering timely updates on local welfare, development, and national affairs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
