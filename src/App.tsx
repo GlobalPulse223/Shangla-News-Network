@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { initialArticles, Article } from './data';
+import { initialArticles, Article, getArticleSlug } from './data';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { Hero } from './components/Hero';
@@ -10,30 +10,61 @@ import { AdminPanel } from './components/AdminPanel';
 import { InfoModal } from './components/InfoModal';
 import { PlusCircle, Filter, Calendar, FolderArchive, ArrowRight } from 'lucide-react';
 
-// Helper to extract article ID from URL path, query param, or hash
-const getArticleIdFromUrl = (): number | null => {
+// Helper to extract article ID from URL path (e.g. /article/junaid-khan-shangla-youth-icon), query param, or hash
+const getArticleIdFromUrl = (articlesList: Article[] = initialArticles): number | null => {
   if (typeof window === 'undefined') return null;
   try {
-    // 1. Primary: Check URL pathname (e.g. /article/101 or /101)
+    // 1. Primary: Check URL pathname (e.g. /article/junaid-khan-shangla-youth-icon or /article/101)
     const path = window.location.pathname;
-    const pathMatch = path.match(/\/article\/(\d+)/i) || path.match(/^\/(\d+)\/?$/);
+    const pathMatch = path.match(/\/article\/([a-zA-Z0-9_-]+)/i) || path.match(/^\/([a-zA-Z0-9_-]+)\/?$/);
     if (pathMatch) {
-      const parsed = parseInt(pathMatch[1], 10);
-      if (!isNaN(parsed) && parsed > 0) return parsed;
+      const param = pathMatch[1].toLowerCase();
+      // Check if numeric ID
+      const parsed = parseInt(param, 10);
+      if (!isNaN(parsed) && String(parsed) === param && parsed > 0) {
+        const found = articlesList.find((a) => a.id === parsed);
+        if (found) return found.id;
+      }
+      // Check if matching slug
+      const foundBySlug = articlesList.find((a) => {
+        if (a.slug && a.slug.toLowerCase() === param) return true;
+        return getArticleSlug(a).toLowerCase() === param;
+      });
+      if (foundBySlug) return foundBySlug.id;
     }
 
-    // 2. Fallbacks for query params or hash if shared that way
+    // 2. Fallback: Check query params (?article=... or ?id=...)
     const params = new URLSearchParams(window.location.search);
-    const paramId = params.get('article') || params.get('id');
-    if (paramId) {
-      const parsed = parseInt(paramId, 10);
-      if (!isNaN(parsed) && parsed > 0) return parsed;
+    const paramVal = params.get('article') || params.get('id');
+    if (paramVal) {
+      const lower = paramVal.toLowerCase();
+      const parsed = parseInt(lower, 10);
+      if (!isNaN(parsed) && String(parsed) === lower && parsed > 0) {
+        const found = articlesList.find((a) => a.id === parsed);
+        if (found) return found.id;
+      }
+      const foundBySlug = articlesList.find((a) => {
+        if (a.slug && a.slug.toLowerCase() === lower) return true;
+        return getArticleSlug(a).toLowerCase() === lower;
+      });
+      if (foundBySlug) return foundBySlug.id;
     }
+
+    // 3. Fallback: Check hash (#article/... or #/article/...)
     const hash = window.location.hash;
-    const hashMatch = hash.match(/(?:article[=\/-]?|\/)(\d+)/i);
+    const hashMatch = hash.match(/(?:article[=\/-]?|\/)([a-zA-Z0-9_-]+)/i);
     if (hashMatch) {
-      const parsed = parseInt(hashMatch[1], 10);
-      if (!isNaN(parsed) && parsed > 0) return parsed;
+      const lower = hashMatch[1].toLowerCase();
+      const parsed = parseInt(lower, 10);
+      if (!isNaN(parsed) && String(parsed) === lower && parsed > 0) {
+        const found = articlesList.find((a) => a.id === parsed);
+        if (found) return found.id;
+      }
+      const foundBySlug = articlesList.find((a) => {
+        if (a.slug && a.slug.toLowerCase() === lower) return true;
+        return getArticleSlug(a).toLowerCase() === lower;
+      });
+      if (foundBySlug) return foundBySlug.id;
     }
   } catch (e) {
     console.error('Error reading article from URL:', e);
@@ -43,7 +74,7 @@ const getArticleIdFromUrl = (): number | null => {
 
 export default function App() {
   const [articles, setArticles] = useState<Article[]>(initialArticles);
-  const [selectedArticleId, setSelectedArticleId] = useState<number | null>(() => getArticleIdFromUrl());
+  const [selectedArticleId, setSelectedArticleId] = useState<number | null>(() => getArticleIdFromUrl(initialArticles));
   const [currentCategory, setCurrentCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedMonthFilter, setSelectedMonthFilter] = useState<string>('all');
@@ -55,17 +86,19 @@ export default function App() {
     return articles.find((a) => a.id === selectedArticleId) || null;
   }, [articles, selectedArticleId]);
 
-  // Open an article and set URL: ?article=:id (compatible everywhere without 404)
+  // Open an article and set clean slug URL: /article/junaid-khan-shangla-youth-icon
   const handleOpenArticle = useCallback((id: number) => {
     setSelectedArticleId(id);
+    const targetArticle = articles.find((a) => a.id === id);
+    const slug = targetArticle ? getArticleSlug(targetArticle) : String(id);
+    const targetPath = `/article/${slug}`;
     try {
-      const targetPath = `/?article=${id}`;
-      window.history.pushState({ articleId: id }, '', targetPath);
+      window.history.pushState({ articleId: id, slug }, '', targetPath);
     } catch (e) {
       console.error('Error pushing URL state:', e);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+  }, [articles]);
 
   // Return to homepage and reset URL
   const handleBackToHome = useCallback(() => {
@@ -81,7 +114,7 @@ export default function App() {
   // Listen for browser back/forward and hash changes
   useEffect(() => {
     const handlePopState = () => {
-      const id = getArticleIdFromUrl();
+      const id = getArticleIdFromUrl(articles);
       setSelectedArticleId(id);
     };
 
@@ -92,7 +125,7 @@ export default function App() {
       window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('hashchange', handlePopState);
     };
-  }, []);
+  }, [articles]);
 
   // Sync document title with current view
   useEffect(() => {
@@ -134,7 +167,9 @@ export default function App() {
 
       // Month filter
       if (selectedMonthFilter !== 'all') {
-        if (!article.date.startsWith(selectedMonthFilter)) {
+        const isSep = selectedMonthFilter === '2026-09' && (article.date.startsWith('2026-09') || article.date.includes('Sep 2026'));
+        const isAug = selectedMonthFilter === '2026-08' && (article.date.startsWith('2026-08') || article.date.includes('Aug 2026'));
+        if (!article.date.startsWith(selectedMonthFilter) && !isSep && !isAug) {
           return false;
         }
       }

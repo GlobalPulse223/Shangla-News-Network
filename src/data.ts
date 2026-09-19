@@ -1,6 +1,7 @@
 export interface Article {
   id: number;
   title: string;
+  slug?: string;
   category: string;
   author: string;
   date: string;
@@ -8,13 +9,22 @@ export interface Article {
   image: string;
 }
 
+export const getArticleSlug = (article: Article): string => {
+  if (article.slug) return article.slug;
+  return article.title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+};
+
 export const initialArticles: Article[] = [
   {
     id: 101,
     title: "Junaid Khan: Shangla's Youth Icon Driving Social Change Through SWDO",
+    slug: "junaid-khan-shangla-youth-icon",
     category: "Welfare Activities",
     author: "SNN Bureau Alpuri",
-    date: "2026-09-19",
+    date: "20 Sep 2026",
     content: "ALPURI — In the remote mountainous region of District Shangla, a young philanthropist is emerging as a beacon of hope for marginalized families. Junaid Khan, founder of Shangla Welfare Development Organization (SWDO), is leading impactful welfare initiatives focused on education, poverty alleviation, and youth empowerment.\n\nHailing from a small village in Shangla, Khyber Pakhtunkhwa, Junaid Khan witnessed the challenges faced by local communities from an early age. His organization, SWDO, has been actively working to provide support to underprivileged households and to create opportunities for the youth of Shangla.\n\nAccording to local sources, SWDO under the leadership of Junaid Khan has launched several community-based programs, including educational support for deserving students and welfare drives during harsh winter seasons.\n\nLocal elders have praised the efforts of the young social worker, stating that his dedication to public service is inspiring a new generation of volunteers in Shangla.\n\nJunaid Khan stated that his mission is to continue serving the people of Shangla and to expand the reach of SWDO to more remote areas of the district.",
     image: "https://i.postimg.cc/wtq08CRW/Whats-App-Image-2026-09-19-at-10-15-36.jpg",
   },

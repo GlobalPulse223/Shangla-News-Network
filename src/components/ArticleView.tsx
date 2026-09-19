@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Calendar, User, Share2, Check, Facebook, MessageCircle, Twitter, Tag, Bookmark, Link2 } from 'lucide-react';
-import { Article } from '../data';
+import { Article, getArticleSlug } from '../data';
 import { NewsCard } from './NewsCard';
 
 interface ArticleViewProps {
@@ -25,7 +25,8 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
       ? String(import.meta.env.VITE_SITE_URL).replace(/\/$/, '')
       : '';
     const baseOrigin = customOrigin || window.location.origin;
-    return `${baseOrigin}/?article=${article.id}`;
+    const slug = getArticleSlug(article);
+    return `${baseOrigin}/article/${slug}`;
   };
 
   const handleCopyLink = () => {
